@@ -1,0 +1,5 @@
+{
+  "name": "PoE Labyrinth Gem Crafting Analyzer",
+  "description": "A dashboard to analyze Path of Exile skill gem data to determine the most profitable Labyrinth crafts for Transfigured gems, based on current market data from poe.ninja.",
+  "requestFramePermissions": []
+}
