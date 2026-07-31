@@ -6,6 +6,7 @@ import { ProcessedGem, ColorAnalysisResult, IndividualGemAnalysisResult } from '
 export const useGemData = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [league, setLeague] = useState<string | null>(null);
   const [colorAnalysis, setColorAnalysis] = useState<ColorAnalysisResult[]>([]);
   const [individualGemAnalysis, setIndividualGemAnalysis] = useState<IndividualGemAnalysisResult[]>([]);
 
@@ -13,7 +14,9 @@ export const useGemData = () => {
     const analyzeData = async () => {
       try {
         setLoading(true);
-        const processedData = await fetchAndProcessGemData();
+        const result = await fetchAndProcessGemData();
+        setLeague(result.league);
+        const processedData = result.gems;
 
         // --- Analysis 1: Transform by Color ---
         const colors: ('Red' | 'Green' | 'Blue')[] = ['Red', 'Green', 'Blue'];
@@ -88,5 +91,5 @@ export const useGemData = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return { loading, error, colorAnalysis, individualGemAnalysis };
+  return { loading, error, league, colorAnalysis, individualGemAnalysis };
 };

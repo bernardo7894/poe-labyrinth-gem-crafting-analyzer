@@ -2,6 +2,8 @@
 
 Static dashboard for comparing Path of Exile Labyrinth Transfiguration crafts using current poe.ninja Skill Gem prices.
 
+The active trade league is discovered at runtime, so the dashboard follows league launches instead of relying on a hard-coded league name. Market requests use the same Cloudflare Worker proxy as the companion Volatile Analyst project.
+
 The app reports:
 
 - expected profit for random same-colour Transfigures;

@@ -4,6 +4,7 @@ export interface PoeNinjaGem {
   id: number;
   name: string;
   icon: string;
+  baseType?: string;
   chaosValue: number;
   divineValue: number;
   detailsId: string;

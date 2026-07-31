@@ -5,7 +5,7 @@ import { ColorAnalysisCard } from './components/ColorAnalysisCard';
 import { IndividualGemCard } from './components/IndividualGemCard';
 
 const App: React.FC = () => {
-  const { colorAnalysis, individualGemAnalysis, loading, error } = useGemData();
+  const { colorAnalysis, individualGemAnalysis, loading, error, league } = useGemData();
 
   const renderContent = () => {
     if (loading) {
@@ -51,7 +51,9 @@ const App: React.FC = () => {
           <p className="mt-2 text-lg text-gray-400">
             Find the most profitable gems for Labyrinth Transfiguration crafts.
           </p>
-          <p className="text-xs text-gray-500 mt-1">Data from Keepers League</p>
+          <p className="text-xs text-gray-500 mt-1">
+            Data from {league ? `${league} League` : 'the current league'}
+          </p>
         </header>
         <main>
           {renderContent()}
