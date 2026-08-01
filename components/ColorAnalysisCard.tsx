@@ -1,58 +1,114 @@
-
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { DashboardCard } from './DashboardCard';
 import { ColorAnalysisResult } from '../types';
 
+type SortKey = 'color' | 'expectedProfit' | 'expectedValue' | 'inputCost' | 'gemCount';
+
 interface ColorAnalysisCardProps {
+  title: string;
+  description: string;
   data: ColorAnalysisResult[];
 }
 
-const TrophyIcon: React.FC<{ color: string }> = ({ color }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" className={`h-8 w-8 ${color}`} viewBox="0 0 20 20" fill="currentColor">
-    <path d="M10 2a6 6 0 00-6 6v3.586l-1.707 1.707A1 1 0 002 14v4a1 1 0 001 1h14a1 1 0 001-1v-4a1 1 0 00-.293-.707L16 11.586V8a6 6 0 00-6-6zM8 8a2 2 0 114 0v3a2 2 0 11-4 0V8z" />
-  </svg>
+const formatChaos = (value: number): string => `${value.toFixed(2)} c`;
+
+const formatTooltip = (label: string, entries: ColorAnalysisResult['cheapestGems']): string => (
+  `${label}:\n${entries.map((entry) => `${entry.name} (${entry.chaosValue.toFixed(1)} c)`).join('\n')}`
 );
 
-const getRankColor = (index: number) => {
-  switch (index) {
-    case 0: return { bg: 'bg-yellow-500/10', border: 'border-yellow-500', text: 'text-yellow-400', trophy: 'text-yellow-400' };
-    case 1: return { bg: 'bg-gray-400/10', border: 'border-gray-400', text: 'text-gray-300', trophy: 'text-gray-400' };
-    case 2: return { bg: 'bg-orange-600/10', border: 'border-orange-600', text: 'text-orange-500', trophy: 'text-orange-500' };
-    default: return { bg: 'bg-gray-700/20', border: 'border-gray-700', text: 'text-gray-400', trophy: 'text-gray-500' };
-  }
+const SortIcon: React.FC<{ active: boolean; direction: 'asc' | 'desc' }> = ({ active, direction }) => {
+  if (!active) return <span className="text-gray-500">↕</span>;
+  return <span className="text-cyan-300">{direction === 'asc' ? '↑' : '↓'}</span>;
 };
 
-export const ColorAnalysisCard: React.FC<ColorAnalysisCardProps> = ({ data }) => {
-  return (
-    <DashboardCard title="Best Color for Random Transfigure">
-      <div className="space-y-4">
-        <p className="text-sm text-gray-400 mb-4">
-          Analyzes the profit from using "Transform a Skill Gem to be a random Transfigured Gem of the same colour".
-        </p>
-        {data.map((result, index) => {
-          const rankColors = getRankColor(index);
-          const profitColor = result.expectedProfit > 0 ? 'text-green-400' : 'text-red-400';
+export const ColorAnalysisCard: React.FC<ColorAnalysisCardProps> = ({ title, description, data }) => {
+  const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'asc' | 'desc' }>({
+    key: 'expectedProfit',
+    direction: 'desc',
+  });
 
-          return (
-            <div key={result.color} className={`p-4 rounded-lg border ${rankColors.bg} ${rankColors.border}`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <TrophyIcon color={rankColors.trophy} />
-                  <span className={`text-xl font-semibold ${rankColors.text}`}>{result.color} Gems</span>
-                </div>
-                <div className={`text-lg font-bold ${profitColor}`}>
-                  {result.expectedProfit.toFixed(2)} c
-                </div>
-              </div>
-              <div className="mt-3 text-xs text-gray-400 grid grid-cols-2 gap-x-4 gap-y-1">
-                <span>Expected Value:</span><span className="text-right text-gray-300">{result.expectedValue.toFixed(2)} c</span>
-                <span>Avg. Input Cost:</span><span className="text-right text-gray-300">{result.inputCost.toFixed(2)} c</span>
-                <span>Pool Size:</span><span className="text-right text-gray-300">{result.gemCount} gems</span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+  const sortedData = useMemo(() => [...data].sort((left, right) => {
+    const leftValue = left[sortConfig.key];
+    const rightValue = right[sortConfig.key];
+    const comparison = typeof leftValue === 'string' && typeof rightValue === 'string'
+      ? leftValue.localeCompare(rightValue)
+      : Number(leftValue) - Number(rightValue);
+    return sortConfig.direction === 'asc' ? comparison : -comparison;
+  }), [data, sortConfig]);
+
+  const requestSort = (key: SortKey) => {
+    setSortConfig((current) => ({
+      key,
+      direction: current.key === key && current.direction === 'desc' ? 'asc' : 'desc',
+    }));
+  };
+
+  const headers: Array<{ key: SortKey; label: string; className?: string }> = [
+    { key: 'color', label: 'Color' },
+    { key: 'expectedProfit', label: 'Expected Profit (c)', className: 'text-right' },
+    { key: 'expectedValue', label: 'Expected Value (c)', className: 'text-right' },
+    { key: 'inputCost', label: 'Input Cost (c)', className: 'text-right' },
+    { key: 'gemCount', label: 'Pool Size', className: 'text-right' },
+  ];
+
+  return (
+    <DashboardCard title={title}>
+      <p className="mb-4 text-sm text-gray-400">{description}</p>
+      {data.length === 0 ? (
+        <p className="rounded-lg border border-gray-700 px-4 py-6 text-center text-sm text-gray-500">
+          No data available for this analysis.
+        </p>
+      ) : (
+        <div className="overflow-x-auto rounded-lg border border-gray-700">
+          <table className="w-full text-sm text-left text-gray-300">
+            <thead className="bg-gray-700/60 text-xs uppercase text-cyan-300">
+              <tr>
+                {headers.map((header) => (
+                  <th key={header.key} scope="col" className={`px-4 py-3 ${header.className ?? ''}`}>
+                    <button
+                      type="button"
+                      onClick={() => requestSort(header.key)}
+                      className={`flex w-full items-center gap-2 ${header.className?.includes('text-right') ? 'justify-end' : 'justify-start'}`}
+                    >
+                      {header.label}
+                      <SortIcon active={sortConfig.key === header.key} direction={sortConfig.direction} />
+                    </button>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {sortedData.map((result) => {
+                const profitClass = result.expectedProfit >= 0 ? 'text-green-400' : 'text-red-400';
+                const valueTooltip = result.priciestGems.length > 0
+                  ? formatTooltip('Most Valuable Outcomes', result.priciestGems)
+                  : undefined;
+                const costTooltip = result.cheapestGems.length > 0
+                  ? formatTooltip('Cheapest Inputs', result.cheapestGems)
+                  : undefined;
+
+                return (
+                  <tr key={result.color} className="border-b border-gray-700 last:border-b-0 hover:bg-gray-700/40">
+                    <th scope="row" className="px-4 py-3 font-semibold text-white">{result.color}</th>
+                    <td className={`px-4 py-3 text-right font-bold ${profitClass}`}>{formatChaos(result.expectedProfit)}</td>
+                    <td className="px-4 py-3 text-right">
+                      <span title={valueTooltip} className={valueTooltip ? 'cursor-help border-b border-dotted border-gray-500' : undefined}>
+                        {formatChaos(result.expectedValue)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <span title={costTooltip} className={costTooltip ? 'cursor-help border-b border-dotted border-gray-500' : undefined}>
+                        {formatChaos(result.inputCost)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">{result.gemCount}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </DashboardCard>
   );
 };

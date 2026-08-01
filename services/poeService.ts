@@ -79,25 +79,48 @@ const resolveCurrentLeague = async (): Promise<{ id: string; name: string }> => 
   throw new Error(`Unable to determine the current PoE league${reason}`);
 };
 
-const getBaseGemName = (name: string, baseType?: string): string => {
-  // Current poe.ninja names represent many Transfigured gems as e.g.
-  // "Vaal Arc (Arc of Oscillating)".
-  const parenthesizedTransfiguredMatch = name.match(/\(([^)]*? of [^)]*)\)/);
-  if (parenthesizedTransfiguredMatch?.[1]) {
-    return parenthesizedTransfiguredMatch[1].split(' of ')[0].trim();
-  }
+const getTransfiguredBaseCandidates = (name: string): string[] => {
+  const candidates = new Set<string>();
+  const parenthesizedName = name.match(/\(([^)]*?\bof\b[^)]*)\)/)?.[1];
+  const sources = [parenthesizedName, name].filter((source): source is string => Boolean(source));
 
-  const transfiguredMatch = name.match(/^(.*?) of /);
-  if (transfiguredMatch?.[1]) {
-    return transfiguredMatch[1].trim();
-  }
+  sources.forEach((source) => {
+    const parts = source.split(/\s+of\s+/);
+    if (parts.length > 1) {
+      candidates.add(parts.slice(0, -1).join(' of ').trim());
+      candidates.add(parts[0].trim());
+    }
+  });
 
-  return baseType?.trim() || name;
+  return [...candidates].filter(Boolean);
 };
 
-const isTransfiguredGem = (name: string): boolean => (
-  /\bof\b/.test(name)
+const normalizeBaseCandidate = (candidate: string): string => (
+  candidate.replace(/^Vaal\s+/, '').trim()
 );
+
+const matchesKnownGemName = (candidate: string, allGemNames: Set<string>): boolean => {
+  const normalized = normalizeBaseCandidate(candidate);
+  return allGemNames.has(candidate)
+    || allGemNames.has(normalized)
+    || allGemNames.has(`Vaal ${normalized}`);
+};
+
+const isTransfiguredGem = (name: string, allGemNames: Set<string>): boolean => (
+  getTransfiguredBaseCandidates(name).some((candidate) => matchesKnownGemName(candidate, allGemNames))
+);
+
+const getBaseGemName = (
+  name: string,
+  baseType: string | undefined,
+  allGemNames: Set<string>,
+): string => {
+  const knownCandidate = getTransfiguredBaseCandidates(name)
+    .find((candidate) => matchesKnownGemName(candidate, allGemNames));
+
+  if (knownCandidate) return normalizeBaseCandidate(knownCandidate);
+  return baseType?.trim() || name;
+};
 
 const getGemColor = (
   gemName: string,
@@ -130,20 +153,21 @@ export const fetchAndProcessGemData = async (): Promise<GemDataResult> => {
     ]);
 
     const colorMap = createColorMap(colorData);
-    const rawGems = ninjaData.lines ?? [];
+    const rawGems = (ninjaData.lines ?? []).filter((gem) => !gem.name.endsWith(' Support'));
 
     if (rawGems.length === 0) {
       throw new Error(`No Skill Gem prices were returned for ${league.name}`);
     }
 
+    const allGemNames = new Set(rawGems.map((gem) => gem.name));
     const gems = rawGems.map((gem) => {
-      const baseName = getBaseGemName(gem.name, gem.baseType);
+      const baseName = getBaseGemName(gem.name, gem.baseType, allGemNames);
       const color = getGemColor(gem.name, baseName, colorMap);
 
       return {
         ...gem,
         color,
-        isTransfigured: isTransfiguredGem(gem.name),
+        isTransfigured: isTransfiguredGem(gem.name, allGemNames),
         baseName,
       };
     });

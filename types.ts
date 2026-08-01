@@ -1,38 +1,59 @@
+export type GemColor = 'Red' | 'Green' | 'Blue';
 
-// Raw data structure from the poe.ninja API
+// Raw data structure from the poe.ninja economy API.
 export interface PoeNinjaGem {
   id: number;
   name: string;
   icon: string;
   baseType?: string;
+  levelRequired?: number;
+  variant?: string;
+  corrupted?: boolean;
+  gemLevel?: number;
+  gemQuality?: number;
   chaosValue: number;
   divineValue: number;
   detailsId: string;
 }
 
-// Our processed gem object with additional properties
 export interface ProcessedGem extends PoeNinjaGem {
-  color: 'Red' | 'Green' | 'Blue' | 'White'; // 'White' for unclassified gems like support gems
+  color: GemColor | 'White';
   isTransfigured: boolean;
   baseName: string;
 }
 
-// Data structure for the "Transform by Color" analysis
+export interface GemPriceEntry {
+  name: string;
+  chaosValue: number;
+}
+
 export interface ColorAnalysisResult {
-  color: 'Red' | 'Green' | 'Blue';
+  color: GemColor;
   expectedValue: number;
   inputCost: number;
   expectedProfit: number;
   gemCount: number;
+  cheapestGems: GemPriceEntry[];
+  priciestGems: GemPriceEntry[];
 }
 
-// Data structure for the "Transform Specific Gem" analysis
 export interface IndividualGemAnalysisResult {
-  id: string; // Using detailsId for a stable key
+  id: string;
   name: string;
   icon: string;
-  inputCost: number;
-  transfiguredVersions: ProcessedGem[];
+  outcomeCount: number;
   avgTransfiguredValue: number;
   expectedProfit: number;
+  priciestGems: GemPriceEntry[];
+}
+
+export const CORRUPTED_VARIANTS = ['1/0', '21/20', '21/23'] as const;
+
+export type CorruptedVariant = typeof CORRUPTED_VARIANTS[number];
+
+export interface GemAnalyses {
+  randomUncorruptedByColor: ColorAnalysisResult[];
+  specificTransfigure: IndividualGemAnalysisResult[];
+  randomCorruptedTransfiguredByColor: Record<CorruptedVariant, ColorAnalysisResult[]>;
+  randomCorruptedBaseByColor: Record<CorruptedVariant, ColorAnalysisResult[]>;
 }
