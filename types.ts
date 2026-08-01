@@ -47,7 +47,10 @@ export interface IndividualGemAnalysisResult {
   priciestGems: GemPriceEntry[];
 }
 
-export const CORRUPTED_VARIANTS = ['1/0', '21/20', '21/23'] as const;
+// The corrupted crafts are only useful for already-levelled gems. A 1/0
+// corrupted input is not a practical Labyrinth craft, so it is not exposed
+// in the analyzer UI or included in the analysis set.
+export const CORRUPTED_VARIANTS = ['21/20', '21/23'] as const;
 
 export type CorruptedVariant = typeof CORRUPTED_VARIANTS[number];
 

@@ -13,8 +13,8 @@ const formatTooltip = (entries: IndividualGemAnalysisResult['priciestGems']): st
 );
 
 const SortIcon: React.FC<{ active: boolean; direction: 'asc' | 'desc' }> = ({ active, direction }) => {
-  if (!active) return <span className="text-gray-500">↕</span>;
-  return <span className="text-cyan-300">{direction === 'asc' ? '↑' : '↓'}</span>;
+  if (!active) return <span className="sort-icon">↕</span>;
+  return <span className="sort-icon sort-icon--active">{direction === 'asc' ? '↑' : '↓'}</span>;
 };
 
 export const IndividualGemCard: React.FC<{ data: IndividualGemAnalysisResult[] }> = ({ data }) => {
@@ -43,31 +43,31 @@ export const IndividualGemCard: React.FC<{ data: IndividualGemAnalysisResult[] }
   };
 
   const headers: Array<{ key: SortKey; label: string; className?: string }> = [
-    { key: 'name', label: 'Base Gem Name' },
-    { key: 'expectedProfit', label: 'Expected Profit (c)', className: 'text-right' },
-    { key: 'avgTransfiguredValue', label: 'Expected Value (c)', className: 'text-right' },
-    { key: 'outcomeCount', label: 'Outcomes', className: 'text-right' },
+    { key: 'name', label: 'Base gem' },
+    { key: 'expectedProfit', label: 'Expected profit', className: 'table-number' },
+    { key: 'avgTransfiguredValue', label: 'Expected value', className: 'table-number' },
+    { key: 'outcomeCount', label: 'Outcomes', className: 'table-number' },
   ];
 
   return (
-    <DashboardCard title="Analysis B (1/0): Random Transfigured Version (by Base Gem)">
-      <p className="mb-2 text-sm text-gray-400">
-        Analyzes the profit from using "Transform a non-Transfigured Skill Gem to be a random Transfigured version".
-      </p>
-      <p className="mb-4 text-xs text-gray-500">
-        Normal skill gems are available from Lilly, so this analysis treats the input cost as 0 c.
-        Hover over an expected value to see the five most valuable possible outcomes.
-      </p>
-      <div className="overflow-x-auto rounded-lg border border-gray-700">
-        <table className="w-full text-sm text-left text-gray-300">
-          <thead className="bg-gray-700/60 text-xs uppercase text-cyan-300">
+    <DashboardCard eyebrow="B · RANDOM BY BASE GEM" title="Best base gems for a random transfigure" className="analysis-card analysis-card--featured">
+      <div className="featured-card__intro">
+        <p className="card-description">
+          Transform a non-Transfigured Skill Gem into a random Transfigured version. Results are grouped by the ordinary base gem you put into the craft.
+        </p>
+        <span className="lilly-badge"><span>✦</span> LILLY INPUT · 0 C</span>
+      </div>
+      <p className="card-note">Hover over an expected value to see the five most valuable possible outcomes.</p>
+      <div className="table-frame">
+        <table className="data-table data-table--gems">
+          <thead>
             <tr>
               {headers.map((header) => (
-                <th key={header.key} scope="col" className={`px-4 py-3 ${header.className ?? ''}`}>
+                <th key={header.key} scope="col" className={header.className ?? ''}>
                   <button
                     type="button"
                     onClick={() => requestSort(header.key)}
-                    className={`flex w-full items-center gap-2 ${header.className?.includes('text-right') ? 'justify-end' : 'justify-start'}`}
+                    className={header.className === 'table-number' ? 'table-sort table-sort--right' : 'table-sort'}
                   >
                     {header.label}
                     <SortIcon active={sortConfig.key === header.key} direction={sortConfig.direction} />
@@ -80,18 +80,19 @@ export const IndividualGemCard: React.FC<{ data: IndividualGemAnalysisResult[] }
             {visibleData.map((gem) => {
               const valueTooltip = gem.priciestGems.length > 0 ? formatTooltip(gem.priciestGems) : undefined;
               return (
-                <tr key={gem.id} className="border-b border-gray-700 last:border-b-0 hover:bg-gray-700/40">
-                  <th scope="row" className="flex items-center gap-3 whitespace-nowrap px-4 py-3 font-medium text-white">
-                    {gem.icon && <img src={gem.icon} alt="" className="h-8 w-8" />}
-                    {gem.name}
+                <tr key={gem.id}>
+                  <th scope="row" className="gem-name-cell">
+                    <span className="gem-rank">{sortedData.indexOf(gem) + 1}</span>
+                    {gem.icon && <img src={gem.icon} alt="" className="gem-icon" />}
+                    <span>{gem.name}</span>
                   </th>
-                  <td className="px-4 py-3 text-right font-bold text-green-400">{formatChaos(gem.expectedProfit)}</td>
-                  <td className="px-4 py-3 text-right">
-                    <span title={valueTooltip} className={valueTooltip ? 'cursor-help border-b border-dotted border-gray-500' : undefined}>
+                  <td className="table-number profit-value profit-value--positive">{formatChaos(gem.expectedProfit)}</td>
+                  <td className="table-number">
+                    <span title={valueTooltip} className={valueTooltip ? 'value-help' : undefined}>
                       {formatChaos(gem.avgTransfiguredValue)}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-right">{gem.outcomeCount}</td>
+                  <td className="table-number pool-count">{gem.outcomeCount}</td>
                 </tr>
               );
             })}
@@ -99,12 +100,12 @@ export const IndividualGemCard: React.FC<{ data: IndividualGemAnalysisResult[] }
         </table>
       </div>
       {data.length > TOP_RESULTS && (
-        <div className="mt-4 flex items-center justify-between gap-4 text-xs text-gray-500">
+        <div className="table-footer">
           <span>{showAll ? `Showing all ${data.length} eligible base gems` : `Showing the top ${TOP_RESULTS} of ${data.length} eligible base gems`}</span>
           <button
             type="button"
             onClick={() => setShowAll((current) => !current)}
-            className="rounded border border-gray-600 px-3 py-1 text-gray-300 hover:border-cyan-400 hover:text-cyan-300"
+            className="table-toggle"
           >
             {showAll ? 'Show top 20' : 'Show all'}
           </button>

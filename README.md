@@ -8,8 +8,10 @@ The analyzer includes the four analyses from the original AI Studio project:
 
 - Analysis A: random uncorrupted transfigured gem by colour (`1/0`);
 - Analysis B: best base gem for the random transfigured-version craft (`1/0`);
-- Analysis C: random corrupted transfigured gem by colour (`1/0`, `21/20`, and `21/23`);
-- Analysis D: random corrupted ordinary gem by colour (`1/0`, `21/20`, and `21/23`).
+- Analysis C: random corrupted transfigured gem by colour (`21/20` and `21/23`);
+- Analysis D: random corrupted ordinary gem by colour (`21/20` and `21/23`).
+
+The dashboard intentionally omits corrupted `1/0` crafts: using a Labyrinth craft on an unlevelled corrupted gem is not a practical strategy.
 
 Support gems and Vaal gems are excluded. For the ordinary-gem input crafts, input cost is treated as `0 c` because ordinary skill gems are available from Lilly; corrupted-gem analyses still subtract the cheapest eligible market input. Hover over expected values or input costs to see the five most relevant prices, and use the sortable headers to reorder results.
 

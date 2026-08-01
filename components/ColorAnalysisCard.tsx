@@ -5,6 +5,7 @@ import { ColorAnalysisResult } from '../types';
 type SortKey = 'color' | 'expectedProfit' | 'expectedValue' | 'inputCost' | 'gemCount';
 
 interface ColorAnalysisCardProps {
+  eyebrow?: string;
   title: string;
   description: string;
   data: ColorAnalysisResult[];
@@ -17,11 +18,11 @@ const formatTooltip = (label: string, entries: ColorAnalysisResult['cheapestGems
 );
 
 const SortIcon: React.FC<{ active: boolean; direction: 'asc' | 'desc' }> = ({ active, direction }) => {
-  if (!active) return <span className="text-gray-500">↕</span>;
-  return <span className="text-cyan-300">{direction === 'asc' ? '↑' : '↓'}</span>;
+  if (!active) return <span className="sort-icon">↕</span>;
+  return <span className="sort-icon sort-icon--active">{direction === 'asc' ? '↑' : '↓'}</span>;
 };
 
-export const ColorAnalysisCard: React.FC<ColorAnalysisCardProps> = ({ title, description, data }) => {
+export const ColorAnalysisCard: React.FC<ColorAnalysisCardProps> = ({ eyebrow, title, description, data }) => {
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'asc' | 'desc' }>({
     key: 'expectedProfit',
     direction: 'desc',
@@ -44,31 +45,31 @@ export const ColorAnalysisCard: React.FC<ColorAnalysisCardProps> = ({ title, des
   };
 
   const headers: Array<{ key: SortKey; label: string; className?: string }> = [
-    { key: 'color', label: 'Color' },
-    { key: 'expectedProfit', label: 'Expected Profit (c)', className: 'text-right' },
-    { key: 'expectedValue', label: 'Expected Value (c)', className: 'text-right' },
-    { key: 'inputCost', label: 'Input Cost (c)', className: 'text-right' },
-    { key: 'gemCount', label: 'Pool Size', className: 'text-right' },
+    { key: 'color', label: 'Outcome colour' },
+    { key: 'expectedProfit', label: 'Expected profit', className: 'table-number' },
+    { key: 'expectedValue', label: 'Expected value', className: 'table-number' },
+    { key: 'inputCost', label: 'Input cost', className: 'table-number' },
+    { key: 'gemCount', label: 'Pool', className: 'table-number' },
   ];
 
   return (
-    <DashboardCard title={title}>
-      <p className="mb-4 text-sm text-gray-400">{description}</p>
+    <DashboardCard eyebrow={eyebrow} title={title} className="analysis-card">
+      <p className="card-description">{description}</p>
       {data.length === 0 ? (
-        <p className="rounded-lg border border-gray-700 px-4 py-6 text-center text-sm text-gray-500">
+        <p className="empty-state">
           No data available for this analysis.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-gray-700">
-          <table className="w-full text-sm text-left text-gray-300">
-            <thead className="bg-gray-700/60 text-xs uppercase text-cyan-300">
+        <div className="table-frame">
+          <table className="data-table">
+            <thead>
               <tr>
                 {headers.map((header) => (
-                  <th key={header.key} scope="col" className={`px-4 py-3 ${header.className ?? ''}`}>
+                  <th key={header.key} scope="col" className={header.className ?? ''}>
                     <button
                       type="button"
                       onClick={() => requestSort(header.key)}
-                      className={`flex w-full items-center gap-2 ${header.className?.includes('text-right') ? 'justify-end' : 'justify-start'}`}
+                      className={header.className === 'table-number' ? 'table-sort table-sort--right' : 'table-sort'}
                     >
                       {header.label}
                       <SortIcon active={sortConfig.key === header.key} direction={sortConfig.direction} />
@@ -79,29 +80,33 @@ export const ColorAnalysisCard: React.FC<ColorAnalysisCardProps> = ({ title, des
             </thead>
             <tbody>
               {sortedData.map((result) => {
-                const profitClass = result.expectedProfit >= 0 ? 'text-green-400' : 'text-red-400';
+                const profitClass = result.expectedProfit >= 0 ? 'profit-value--positive' : 'profit-value--negative';
                 const valueTooltip = result.priciestGems.length > 0
                   ? formatTooltip('Most Valuable Outcomes', result.priciestGems)
                   : undefined;
                 const costTooltip = result.cheapestGems.length > 0
                   ? formatTooltip('Cheapest Inputs', result.cheapestGems)
                   : undefined;
+                const colorClass = `gem-color-dot--${result.color.toLowerCase()}`;
 
                 return (
-                  <tr key={result.color} className="border-b border-gray-700 last:border-b-0 hover:bg-gray-700/40">
-                    <th scope="row" className="px-4 py-3 font-semibold text-white">{result.color}</th>
-                    <td className={`px-4 py-3 text-right font-bold ${profitClass}`}>{formatChaos(result.expectedProfit)}</td>
-                    <td className="px-4 py-3 text-right">
-                      <span title={valueTooltip} className={valueTooltip ? 'cursor-help border-b border-dotted border-gray-500' : undefined}>
+                  <tr key={result.color}>
+                    <th scope="row" className="color-label">
+                      <span className={`gem-color-dot ${colorClass}`} aria-hidden="true" />
+                      {result.color}
+                    </th>
+                    <td className={`table-number profit-value ${profitClass}`}>{formatChaos(result.expectedProfit)}</td>
+                    <td className="table-number">
+                      <span title={valueTooltip} className={valueTooltip ? 'value-help' : undefined}>
                         {formatChaos(result.expectedValue)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-right">
-                      <span title={costTooltip} className={costTooltip ? 'cursor-help border-b border-dotted border-gray-500' : undefined}>
+                    <td className="table-number input-value">
+                      <span title={costTooltip} className={costTooltip ? 'value-help' : undefined}>
                         {formatChaos(result.inputCost)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-right">{result.gemCount}</td>
+                    <td className="table-number pool-count">{result.gemCount}</td>
                   </tr>
                 );
               })}
